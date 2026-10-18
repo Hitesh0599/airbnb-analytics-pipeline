@@ -1,0 +1,246 @@
+models:
+  - name: Intermediate_Bookings
+    description: "This is a transformed/cleaned bookings model built upon the booking model of staging layer having a grain of a booking."
+    columns:
+      - name: BOOKING_ID
+        description: "Unique identifier of a booking. Primary key: one row per booking."
+        data_type: string
+        data_tests:
+          - not_null
+          - unique
+      - name: LISTING_ID
+        description: "Listing that was booked. Foreign key to Dedup_Listings; an unmatched ID raises a warning rather than an error, for example when the listing has since been deleted."
+        data_type: integer
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('Intermediate_Listings')
+                field: listing_id 
+              config:
+                severity: warn
+      - name: NIGHTS_BOOKED
+        description: "Number of nights the booking covers. Must not be negative."
+        data_type: integer
+        data_tests:
+          - checking_negative
+      - name: BOOKING_AMOUNT
+        description: "Amount charged for the booking, stored with 2 decimals. Must not be negative."
+        data_type: number(12, 2)
+        data_tests:
+          - checking_negative
+      - name: CLEANING_FEE
+        description: "One-off cleaning fee charged on the booking. Must not be negative."
+        data_type: number(12, 2)
+        data_tests:
+          - checking_negative
+      - name: SERVICE_FEE
+        description: "Platform service fee charged on the booking. Must not be negative."
+        data_type: number(12, 2)
+        data_tests:
+          - checking_negative
+      - name: BOOKING_STATUS
+        description: "Outcome of the booking: either confirmed or cancelled."
+        data_type: string
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cancelled', 'confirmed']
+      - name: BOOKING_LOADED_AT
+        description: "Timestamp when the booking row was loaded into Snowflake. Used to pick the latest version of a booking when deduplicating."
+        data_type: datetime
+        data_tests:
+          - not_null
+  
+  - name: Dedup_Hosts
+    description: "{{doc('Dedup_Hosts')}}"
+    columns: 
+      - name: HOST_ID
+        description: "Unique identifier of a host. Primary key: one row per host after deduplication, with deleted hosts already removed."
+        data_tests:
+          - not_null
+          - unique
+      - name: IS_SUPERHOST
+        description: "Whether the host has superhost status (TRUE or FALSE), exactly as received from the source and before any cleaning."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [FALSE, TRUE]
+  
+  - name: Intermediate_Hosts
+    description: "This is a transformed/cleaned hosts model built upon the snapshot which was further built on deduped Hosts model"
+    columns:
+      - name: SURROGATE_HOST_ID
+        description: "This is a combination of host_id and dbt_valid_from(from snapshot)"
+        data_tests:
+          - not_null
+          - unique
+
+  - name: Dedup_Listings
+    description: "{{doc('Dedup_Listings')}}"
+    columns:
+      - name: LISTING_ID
+        description: "Unique identifier of a listing. Primary key: one row per listing after deduplication, with deleted listings already removed."
+        data_tests:
+          - not_null
+          - unique
+      - name: HOST_ID
+        description: "Host who owns the listing. Foreign key to Dedup_Hosts; an unmatched ID raises a warning rather than an error, for example when the host has been deleted."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('Dedup_Hosts')
+                field: HOST_ID
+              config:
+                severity: warn
+      - name: PROPERTY_TYPE
+        description: "Kind of property being listed: Apartment, Condo or House."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Apartment', 'Condo', 'House']
+      - name: ROOM_TYPE
+        description: "What the guest gets: the whole property (Entire home) or a single room in it (Private room)."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Entire home', 'Private room']
+      - name: ACCOMMODATES
+        description: "Maximum number of guests the listing can host. Must not be negative."
+        data_tests:
+          - checking_negative
+      - name: BEDROOMS
+        description: "Number of bedrooms in the listing. Must not be negative."
+        data_tests:
+          - checking_negative
+      - name: BATHROOMS
+        description: "Number of bathrooms in the listing. Must not be negative."
+        data_tests:
+          - checking_negative
+  
+  - name: Intermediate_Listings
+    description: "This is a transformed/cleaned listings model built upon the snapshot which was further built on deduped Listings model"
+    columns:
+      - name: SURROGATE_LISTING_ID
+        description: "This is a combination of listing_id and dbt_valid_from(from snapshot)"
+        data_tests:
+          - not_null
+          - unique
+      - name: PRICE_PER_NIGHT
+        description: "Nightly price as a number, cleaned from the raw text value held in the snapshot (for example '$10' becomes 10). Must not be negative."
+        data_tests:
+          - checking_negative
+
+  - name: Mart_Fullmoon_Bookings
+    description: "This gold layer bookings model has full moon dates attached that were within 3 days of booking date"
+  
+  - name: Dim_Listings
+    description: "{{doc('scd2_date_handling')}}"
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_equal_other_table:
+          arguments:
+            compare_model: ref("Intermediate_Listings")
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: SURROGATE_LISTING_ID
+        data_type: string
+      - name: LISTING_ID
+        data_type: INT
+      - name: HOST_ID
+        data_type: INT
+      - name: PROPERTY_TYPE
+        data_type: string
+      - name: ROOM_TYPE
+        data_type: string
+      - name: CITY
+        data_type: string
+      - name: COUNTRY
+        data_type: string
+      - name: CONTINENT
+        data_type: string
+      - name: ACCOMMODATES
+        data_type: INT
+      - name: BEDROOMS
+        data_type: INT
+      - name: BATHROOMS
+        data_type: INT
+      - name: PRICE_PER_NIGHT
+        data_type: decimal(25,7)
+      - name: DBT_VALID_FROM
+        data_type: datetime
+      - name: DBT_VALID_TO
+        data_type: datetime
+      
+  - name: Dim_Hosts
+    description: "{{doc('scd2_date_handling')}}"
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_equal_other_table:
+          arguments:
+            compare_model: ref("Intermediate_Hosts")
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: SURROGATE_HOST_ID
+        data_type: string
+      - name: HOST_ID
+        data_type: INT
+      - name: HOST_NAME
+        data_type: string
+      - name: HOST_SINCE
+        data_type: date
+      - name: IS_SUPERHOST
+        data_type: boolean
+      - name: RESPONSE_RATE
+        data_type: INT
+      - name: DBT_VALID_FROM
+        data_type: datetime
+      - name: DBT_VALID_TO
+        data_type: datetime
+
+  - name: Fct_Bookings
+    description: "This is the core fact table, based on Booking data with foreign dimension keys like SURROGATE_HOST_ID and SURROGATE_LISTING_ID which uniquely identifies the scd type-2 dimensions"
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: BOOKING_ID
+        data_type: string
+      - name: LISTING_ID
+        data_type: INT 
+      - name: BOOKING_DATE
+        data_type: date
+      - name: NIGHTS_BOOKED
+        data_type: INT
+      - name: BOOKING_AMOUNT
+        data_type: decimal(25, 4)
+      - name: CLEANING_FEE
+        data_type: decimal(25, 4)
+      - name: SERVICE_FEE
+        data_type: decimal(25, 4)
+      - name: BOOKING_STATUS
+        data_type: string
+      - name: BOOKING_LOADED_AT
+        data_type: datetime
+      - name: HOST_ID
+        data_type: INT 
+      - name: SURROGATE_HOST_ID
+        data_type: string
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('Dim_Hosts')
+                field: SURROGATE_HOST_ID
+              config:
+                severity: warn
+      - name: SURROGATE_LISTING_ID
+        data_type: string
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('Dim_Listings')
+                field: SURROGATE_LISTING_ID
+              config:
+                severity: warn

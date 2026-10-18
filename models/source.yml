@@ -1,0 +1,16 @@
+sources:
+  - name: AIRBNB_STAGING
+    database: AIRBNB_PROJECT 
+    schema: STAGING
+    tables:
+      - name: BOOKINGS
+
+      - name: HOSTS
+
+      - name: LISTINGS
+    config:
+      loaded_at_field: LOADED_AT 
+      freshness:
+        warn_after : {count : 3, period : day}
+        error_after : {count : 5, period : day}
+      

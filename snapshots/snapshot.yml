@@ -1,0 +1,26 @@
+snapshots:
+  - name: Snapshot_Hosts
+    description: "{{doc('Snapshots_Hosts')}}"
+    relation: ref('Dedup_Hosts')
+    config:
+      database: AIRBNB_PROJECT
+      schema: SNAPSHOTS
+      strategy: timestamp
+      updated_at: LOADED_AT
+      unique_key: HOST_ID
+      hard_deletes: invalidate
+    
+  
+  - name: Snapshot_Listings
+    description: "{{doc('Snapshots_Listings')}}"
+    relation: ref('Dedup_Listings')
+    config:
+      database: AIRBNB_PROJECT
+      schema: SNAPSHOTS 
+      strategy: timestamp
+      updated_at: LOADED_AT
+      unique_key: LISTING_ID
+      hard_deletes: invalidate
+
+
+

@@ -1,0 +1,8 @@
+profiles.yml
+*.p8
+*.pub
+.env
+target/
+dbt_packages/
+logs/
+analyses/

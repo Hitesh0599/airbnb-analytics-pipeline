@@ -1,0 +1,78 @@
+
+# Name your project! Project names should contain only lowercase characters
+# and underscores. A good package name should reflect your organization's
+# name or the intended use of these models
+name: 'AIRBNB_PROJECT'
+version: '1.0.0'
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'AIRBNB_PROJECT'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project can be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+vars:
+  Role_Name: 'Role_PowerBI'
+
+
+
+on-run-start: 
+    - "CREATE SCHEMA IF NOT EXISTS {{target.database}}.AUDIT"
+    - "CREATE TABLE IF NOT EXISTS {{target.database}}.AUDIT.Audit_Log(
+              Batch_ID string,
+              Node string, 
+              Materialization_type string, 
+              Status string,
+              Error_Message string,
+              Execution_Time Decimal(5,2),
+              Batch_Timestamp timestamp)"
+   
+on-run-end:
+    - "{{Filling_Audit_Log(results)}}"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+
+# In this example config, we tell dbt to build all models in the example/
+# directory as views. These settings can be overridden in the individual model
+# files using the `{{ config(...) }}` macro.
+models:
+  AIRBNB_PROJECT:
+    +materialized: table
+    +database: AIRBNB_PROJECT
+    +schema: MARTS
+
+    01_Staging:
+      +materialized: ephemeral
+
+    02_Dedup:
+      +materialized: ephemeral
+
+    03_Intermediate:
+      +materialized: view
+      +database: AIRBNB_PROJECT
+      +schema: INTERMEDIATE
+      
+    04_Marts:
+      +post-hook: "GRANT SELECT ON {{this}} to ROLE {{var('Role_Name')}}"
+      +materialized: table
+      +database: AIRBNB_PROJECT
+      +schema: MARTS
+
+    05_Miscellaneous:
+      +post-hook: "GRANT SELECT ON {{this}} to ROLE {{var('Role_Name')}}"
+      +materialized: table
+      +database: AIRBNB_PROJECT
+      +schema: MISCELLANEOUS
+

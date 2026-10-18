@@ -1,0 +1,47 @@
+unit_tests:
+  - name: Unit_Test_Fct_Bookings
+    description: 'This tests the Fct_Booking model which is an incremental model based on Intermediate_Bookings and further joins with Dim_Hosts and Dim_Listings to get the foreign dimension keys'
+    model: 'Fct_Bookings'
+    overrides:
+      macros:
+        is_incremental: true 
+
+    given:
+      - input: ref('Intermediate_Bookings')
+        rows:
+          - {BOOKING_ID : 2, LISTING_ID : 101, BOOKING_DATE : '2026-10-01 15:09:23', BOOKING_LOADED_AT : '2026-10-06 12:07:45'}
+          - {BOOKING_ID : 3, LISTING_ID : 102, BOOKING_DATE : '2026-10-09 12:07:45', BOOKING_LOADED_AT : '2026-10-10 15:09:23'}
+          - {BOOKING_ID : 1, LISTING_ID : 101, BOOKING_DATE : '2026-10-06 12:07:45', BOOKING_LOADED_AT : '2026-10-10 14:09:09'}
+          - {BOOKING_ID : 5, LISTING_ID : 110, BOOKING_DATE : '2025-12-14 23:10:32', BOOKING_LOADED_AT : '2026-10-05 12:09:09'}
+
+      - input: this
+        format: sql
+        rows: |
+          select 2 as BOOKING_ID, 101 as LISTING_ID,
+                '2026-07-01 10:57:25'::timestamp as BOOKING_DATE,
+                '2026-10-01 15:09:23'::timestamp as BOOKING_LOADED_AT,
+                '1835a5a22439eafd4e885c74ebab681e' as SURROGATE_HOST_ID,
+                '88161938e4e2c40cd260ecfbe67be893' as SURROGATE_LISTING_ID
+          union all
+          select 3, 102, '2026-10-03 15:09:23'::timestamp, '2026-10-06 12:00:45'::timestamp, '88161938e4e2c40cd260ecfbe67be843', '1835a5a22439eafd4e885c74ebab680e'
+          union all
+          select 4, 103, '2026-01-02 17:00:05'::timestamp, '2026-10-07 15:09:23'::timestamp, NULL, '1835a5a22439eafd4e885c74ebab692e'
+          union all
+          select 5, 101, '2025-12-14 23:10:32'::timestamp, '2026-10-03 15:09:23'::timestamp, '87161938e4e2c40cd260ecfbe67be841', NULL
+
+      - input: ref('Dim_Listings')
+        rows:
+          - {SURROGATE_LISTING_ID : 'e9e4043e1b83f926647f339e36d059bf', LISTING_ID : 102, HOST_ID : 1000, DBT_VALID_FROM : '1900-01-01 00:00:00', DBT_VALID_TO : '2026-10-23 20:40:24'}
+          - {SURROGATE_LISTING_ID : 'b20aa741870585f9efff152a147d311a', LISTING_ID : 102, HOST_ID : 1001, DBT_VALID_FROM : '2026-10-23 20:40:24', DBT_VALID_TO : '9999-12-31 23:59:59'}
+          - {SURROGATE_LISTING_ID : 'fb1ce4268b8c3f37ce58c07c4cc07596', LISTING_ID : 101, HOST_ID : 1010, DBT_VALID_FROM : '1900-01-01 00:00:00', DBT_VALID_TO : '9999-12-31 23:59:59'}
+    
+      - input: ref('Dim_Hosts')
+        rows:
+          - {SURROGATE_HOST_ID : '8d78ebbc6f63eb06da24288cb4db788f', HOST_ID : 1000, IS_SUPERHOST : TRUE, DBT_VALID_FROM : '1900-01-01 00:00:00', DBT_VALID_TO : '2026-05-23 15:20:04'}
+          - {SURROGATE_HOST_ID : 'cebfefb4cd21c137d761e8e08b8bc45f', HOST_ID : 1000, IS_SUPERHOST : FALSE, DBT_VALID_FROM : '2026-05-23 15:20:04', DBT_VALID_TO : '9999-12-31 23:59:59'}
+
+    expect:
+      rows:
+        - {BOOKING_ID : 3, LISTING_ID : 102, BOOKING_DATE : '2026-10-09 12:07:45', BOOKING_LOADED_AT : '2026-10-10 15:09:23', SURROGATE_LISTING_ID : 'e9e4043e1b83f926647f339e36d059bf', HOST_ID : 1000, SURROGATE_HOST_ID : 'cebfefb4cd21c137d761e8e08b8bc45f'}
+        - {BOOKING_ID : 1, LISTING_ID : 101, BOOKING_DATE : '2026-10-06 12:07:45', BOOKING_LOADED_AT : '2026-10-10 14:09:09', SURROGATE_LISTING_ID : 'fb1ce4268b8c3f37ce58c07c4cc07596', HOST_ID : 1010, SURROGATE_HOST_ID : NULL}
+        - {BOOKING_ID : 5, LISTING_ID : 110, BOOKING_DATE : '2025-12-14 23:10:32', BOOKING_LOADED_AT : '2026-10-05 12:09:09', SURROGATE_LISTING_ID : NULL, HOST_ID : NULL, SURROGATE_HOST_ID : NULL}

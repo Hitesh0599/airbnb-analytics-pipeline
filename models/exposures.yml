@@ -1,0 +1,16 @@
+exposures:
+  - name: 'AIRBNB_PERFORMANCE_DASHBOARD'
+    type: dashboard
+    maturity: medium
+    url: 'https://app.powerbi.com/groups/me/reports/e7a60c02-3f17-4459-9bc1-9f165aec28ca/76bdbbf84d52abf75844?experience=power-bi'
+    description: "{{doc('Dasboard')}}"
+
+    depends_on:
+      - ref('Dim_Hosts')
+      - ref('Dim_Listings')
+      - ref('Fct_Bookings')
+      - ref('Mart_Fullmoon_Bookings')
+    
+    owner:
+      name: Hitesh Dagar
+

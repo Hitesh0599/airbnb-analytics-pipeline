@@ -1,0 +1,23 @@
+unit_tests:
+  - name: Unit_Test_Mart_Fullmoon_Bookings
+    description: "Used to test the functionality of matching booking dates with only full monn dates which are within 3 days"
+    model: 'Mart_Fullmoon_Bookings'
+    given:
+      - input: ref('Fct_Bookings')
+        rows: 
+          - {booking_date : '2016-10-05'}
+          - {booking_date : '2024-07-25'}
+          - {booking_date : '2022-05-19'}
+      - input: ref('seed_full_moon_dates')
+        rows: 
+          - {full_moon_date : '2016-10-08'}
+          - {full_moon_date : '2016-10-05'}
+          - {full_moon_date : '2024-07-22'}
+          - {full_moon_date : '2025-01-15'}
+
+    expect:
+      rows:
+        - {booking_date : '2016-10-05', full_moon_date : '2016-10-05', Near_Full_Moon : 'Yes'}
+        - {booking_date : '2016-10-05', full_moon_date : '2016-10-08', Near_Full_Moon : 'Yes'}
+        - {booking_date : '2024-07-25', full_moon_date : '2024-07-22', Near_Full_Moon : 'Yes'}
+        - {booking_date : '2022-05-19', full_moon_date : NULL, Near_Full_Moon : 'No'}

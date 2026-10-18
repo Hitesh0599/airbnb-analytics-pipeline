@@ -1,0 +1,14 @@
+unit_tests:
+  - name: Unit_Test_Dim_Hosts
+    description: "This unit test checks that first iteration of hosts id starts from '1900-01-01 00:00:00' instead of the timestamp when data was loaded"
+    model: 'Dim_Hosts'
+    given:
+      - input: ref('Intermediate_Hosts')
+        rows:
+          - {SURROGATE_HOST_ID: 'abc123', HOST_ID: 1, DBT_VALID_FROM: '2026-10-05 12:05:25', DBT_VALID_TO: '2026-10-05 14:25:05'}
+          - {SURROGATE_HOST_ID: 'def456', HOST_ID: 1, DBT_VALID_FROM: '2026-10-05 14:25:05', DBT_VALID_TO: NULL}
+    
+    expect:
+      rows:
+        - {SURROGATE_HOST_ID: 'abc123', HOST_ID: 1, DBT_VALID_FROM: '1900-01-01 00:00:00', DBT_VALID_TO: '2026-10-05 14:25:05'}
+        - {SURROGATE_HOST_ID: 'def456', HOST_ID: 1, DBT_VALID_FROM: '2026-10-05 14:25:05', DBT_VALID_TO: '9999-12-31 23:59:59'}

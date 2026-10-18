@@ -1,0 +1,5 @@
+seeds:
+  - name: seed_full_moon_dates
+    description: "This file contains full moon dates from Nov'2009 to Dec'2030 for analyzing the impact of full moon on cancellation pattern"
+  - name: seed_country_continent
+    description: "Country-to-continent mapping used to roll listings up to continent level in Dim_Listings. One row per country with a single continent, so even transcontinental countries such as Turkey appear once. Country names were corrected to match the listings country."
