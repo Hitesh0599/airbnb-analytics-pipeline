@@ -6,15 +6,15 @@ unit_tests:
       - input: ref('Staging_Hosts')
         format: sql
         rows: |
-          select 1 as host_id, 'Hitesh' as host_name, '2020-01-01'::date as host_since, false as is_superhost, 65 as response_rate, '2026-10-05 12:00:00'::timestamp as loaded_at
+          select 1 as host_id, 'Hitesh' as host_name, '2020-01-01'::date as host_since, false as is_superhost, 65 as response_rate, false as to_be_deleted, '2026-10-05 12:00:00'::timestamp as loaded_at, 'hosts.csv' as file_name
           union all
-          select 1, 'Ram', '2020-01-01'::date, true, 100, '2026-10-05 13:00:00'::timestamp
+          select 1, 'Ram', '2020-01-01'::date, true, 100, false, '2026-10-05 13:00:00'::timestamp, 'hosts.csv'
           union all
-          select 2, null, null, null, null, '2026-10-01 07:57:00'::timestamp
+          select 2, null, null, null, null, true, '2026-10-01 07:57:00'::timestamp, 'hosts.csv'
           union all
-          select 3, 'Shyam', '2021-06-15'::date, false, null, '2026-10-01 07:57:00'::timestamp
+          select 3, 'Shyam', '2021-06-15'::date, false, null, false, '2026-10-01 07:57:00'::timestamp, 'hosts_large.csv'
 
     expect:
       rows:
-        - {host_id: 1, host_name: 'Ram', host_since: '2020-01-01', is_superhost: true, response_rate: 100, loaded_at: '2026-10-05 13:00:00'}
-        - {host_id: 3, host_name: 'Shyam', host_since: '2021-06-15', is_superhost: false, response_rate: NULL, loaded_at: '2026-10-01 07:57:00'}
+        - {host_id: 1, host_name: 'Ram', host_since: '2020-01-01', is_superhost: true, response_rate: 100, to_be_deleted: false, loaded_at: '2026-10-05 13:00:00', file_name: 'hosts.csv'}
+        - {host_id: 3, host_name: 'Shyam', host_since: '2021-06-15', is_superhost: false, response_rate: NULL, to_be_deleted: false, loaded_at: '2026-10-01 07:57:00', file_name: 'hosts_large.csv'}
