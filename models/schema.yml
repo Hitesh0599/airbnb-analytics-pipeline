@@ -16,7 +16,7 @@ models:
           - relationships:
               arguments:
                 to: ref('Intermediate_Listings')
-                field: listing_id 
+                field: LISTING_ID 
               config:
                 severity: warn
       - name: NIGHTS_BOOKED
